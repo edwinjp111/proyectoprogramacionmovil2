@@ -1,0 +1,65 @@
+// 1. Registro del Service Worker
+if ('serviceWorker' in navigator) {
+window.addEventListener('load', () => {
+navigator.serviceWorker.register('./sw.js')
+.then(reg => console.log('Service Worker registrado con éxito', reg))
+.catch(err => console.error('Error al registrar el Service Worker', err));
+});
+}
+
+// 2. Elementos del DOM
+const fetchBtn = document.getElementById('fetch-btn');
+const loadingDiv = document.getElementById('loading');
+const errorMsg = document.getElementById('error-msg');
+const pokeCard = document.getElementById('poke-card');
+const pokeName = document.getElementById('poke-name');
+const pokeImg = document.getElementById('poke-img');
+const pokeId = document.getElementById('poke-id');
+const pokeWeight = document.getElementById('poke-weight');
+const offlineBadge = document.getElementById('offline-badge');
+
+// Detectar estado de conexión del navegador
+window.addEventListener('online', () => offlineBadge.style.display = 'none');
+window.addEventListener('offline', () => offlineBadge.style.display = 'block');
+
+// 3. Módulo 2: Petición asíncrona a la API externa
+fetchBtn.addEventListener('click', async () => {
+// Limpieza inicial de la interfaz
+loadingDiv.style.display = 'block';
+errorMsg.textContent = '';
+pokeCard.style.display = 'none';
+
+// Generamos un ID de Pokémon aleatorio entre 1 y 151
+const randomId = Math.floor(Math.random() * 151) + 1;
+
+try {
+// La app realiza la petición en segundo plano y la interfaz sigue activa sin congelarse [2]
+const response = await fetch(https://pokeapi.co/api/v2/pokemon/${randomId});
+
+if (!response.ok) {
+throw new Error('Servidor remoto devolvió un error de comunicación.');
+}
+
+const data = await response.json(); // Transformación de los datos JSON estructurados [2]
+
+// Si el Service Worker nos devolvió un JSON simulado de offline:
+if (data.error === "offline") {
+throw new Error('Estás desconectado. Conéctate a internet para descubrir nuevos Pokémon.');
+}
+
+// 4. Renderizar datos en pantalla
+pokeName.textContent = data.name.toUpperCase();
+pokeImg.src = data.sprites.front_default;
+pokeId.textContent = data.id;
+pokeWeight.textContent = ${data.weight / 10} kg;
+
+pokeCard.style.display = 'block';
+
+} catch (error) {
+// Módulo 1: Captura de errores de red o lógica
+console.error("Fallo de conexión o parseo: ", error);
+errorMsg.textContent = error.message;
+} finally {
+loadingDiv.style.display = 'none';
+}
+});
